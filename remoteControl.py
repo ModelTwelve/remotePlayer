@@ -6,6 +6,8 @@ from random import shuffle
 
 class RemoteControl():
 
+    Current = 0
+    PRESSED_PLAY = False
     SPAWNPROCESS = '/usr/bin/mpg123 -R'    
     QUIT = "q\r"
 
@@ -20,8 +22,12 @@ class RemoteControl():
         self.MonitorProcessThread.start()
 
     def Play(self):
-        cmd = "LOAD %s\r" % (self.Playlist[self.Current])
-        self.RemoteControlProcess.send(cmd) 
+        if self.PRESSED_PLAY:
+            self.Pause()
+        else:
+            cmd = "LOAD %s\r" % (self.Playlist[self.Current])
+            self.PRESSED_PLAY=True
+            self.RemoteControlProcess.send(cmd) 
     
     def InitList(self): 
         self.Playlist = []
@@ -30,7 +36,8 @@ class RemoteControl():
                 if filename.lower().endswith(".mp3"):
                     self.Playlist.append(os.path.join(dirname, filename))
         shuffle(self.Playlist)
-        self.Current=0    
+        self.Current=0
+        self.PRESSED_PLAY=False
     
     def Stop(self):
         self.RemoteControlProcess.send("S\r") 
@@ -40,12 +47,20 @@ class RemoteControl():
 
     def Prev(self):
         self.Stop()
-        self.Current -= 1
+        if self.Current > 0:
+            self.Current -= 1
+        else:
+            self.Current = len(self.Playlist)-1
+        self.PRESSED_PLAY=False
         self.Play()      
     
     def Next(self):
         self.Stop()
-        self.Current += 1
+        if self.Current < len(self.Playlist)-1:
+            self.Current += 1
+        else:
+            self.Current=0
+        self.PRESSED_PLAY=False
         self.Play()        
 
     def MonitorProcess(self):
@@ -59,7 +74,6 @@ class RemoteControl():
                 ])
             if ev == 2:
                 self.callback()
-
 
     def Quit(self):
         self.RemoteControlProcess.send(self.QUIT)
