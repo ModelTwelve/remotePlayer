@@ -13,7 +13,7 @@ def startButtonServer(rc):
     print("done")
 
 def doWhenDone():
-    print("done playing")
+    print("paused")
 
 def main():
     rc = RemoteControl('/home/pi/mp3s',doWhenDone)

@@ -1,8 +1,15 @@
 import RPi.GPIO as GPIO  
 import os
+from time import sleep
 
 class GPIOHandler():
     rc = None
+    currentVolume = 80
+    # 0 = Not Shifted
+    # 1 = Shifted
+    # 2 = Sticky Shifted
+    # 3 = Super Shifted
+    shiftStatus = 0    
     _PLAY = 17
     _PREV = 27
     _NEXT = 18
@@ -21,26 +28,63 @@ class GPIOHandler():
         # Stop/Init        
         GPIO.setup(self._STOP, GPIO.IN, pull_up_down=GPIO.PUD_UP)  
 
-        GPIO.add_event_detect(self._PLAY, GPIO.FALLING, callback=self.CallBack_Play, bouncetime=300)  
-        GPIO.add_event_detect(self._PREV, GPIO.FALLING, callback=self.CallBack_Prev, bouncetime=300) 
-        GPIO.add_event_detect(self._NEXT, GPIO.FALLING, callback=self.CallBack_Next, bouncetime=300)  
-        GPIO.add_event_detect(self._STOP, GPIO.FALLING, callback=self.CallBack_StopInit, bouncetime=300) 
+        GPIO.add_event_detect(self._PLAY, GPIO.FALLING, callback=self.Button_Logic, bouncetime=300)  
+        GPIO.add_event_detect(self._PREV, GPIO.FALLING, callback=self.Button_Logic, bouncetime=300) 
+        GPIO.add_event_detect(self._NEXT, GPIO.FALLING, callback=self.Button_Logic, bouncetime=300)  
+        GPIO.add_event_detect(self._STOP, GPIO.FALLING, callback=self.Button_Logic, bouncetime=300) 
+
+        self.SetVolume()
 
     def Finish(self):
-        GPIO.cleanup()             
+        GPIO.cleanup()
+    
+    def ShutDown(self):
+        os.system("shutdown now")
+    
+    def SetVolume(self):
+        os.system("amixer cset numid=1 {0}%".format(self.currentVolume))    
 
-    def CallBack_Play(self, channel):
-        # Check GPIO 22 Stop/Init
-        # If that button is also pushed then assume shutdown is requested instead
-        if GPIO.input(self._STOP) == GPIO.LOW:
-            os.system("shutdown now")      
-        else:
-            # Typical / expected
-            self.rc.Play()        
-    def CallBack_Prev(self, channel):  
-        self.rc.Prev()
-    def CallBack_Next(self, channel):  
-        self.rc.Next()
-    def CallBack_StopInit(self, channel):  
-        self.rc.Stop()
-        self.rc.InitList()
+    def Button_Logic(self, channel):            
+        if self.shiftStatus == 0:
+            if channel == self._PLAY:
+                self.rc.Play()    
+            elif channel == self._PREV:
+                self.rc.Prev()    
+            elif channel == self._NEXT:
+                self.rc.Next()    
+            else: # channel == self._STOP:            
+                # Set Shifted
+                self.shiftStatus = 1  
+        else:            
+            if channel == self._STOP and self.shiftStatus == 1:            
+                # Reset Shifted and Rest
+                self.shiftStatus = 0
+                self.rc.Stop()
+                self.rc.InitList()     
+            else:
+                if channel == self._PLAY:
+                    if self.shiftStatus == 1: 
+                        # Set Super Shifted
+                        self.shiftStatus = 3
+                    elif self.shiftStatus == 3:
+                        # Shutdown
+                        self.Finish()
+                        self.ShutDown()
+                    else:
+                        # Reset Shift
+                        self.shiftStatus = 0
+                elif channel == self._PREV:
+                    # Set Sticky Shifted
+                    self.shiftStatus = 2
+                    self.currentVolume -= 5
+                    self.SetVolume()  
+                elif channel == self._NEXT:
+                    # Set Sticky Shifted
+                    self.shiftStatus = 2
+                    self.currentVolume += 5
+                    self.SetVolume()
+                else:
+                    # Stop
+                    # Reset Shift
+                    self.shiftStatus = 0
+            

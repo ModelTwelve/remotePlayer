@@ -1,13 +1,14 @@
 import pexpect
 import os
 from threading import Thread
+from threading import Lock
 from time import sleep
 from random import shuffle
 
 class RemoteControl():
 
-    Current = 0
-    PRESSED_PLAY = False
+    Current = 0    
+    ACTIVELY_PLAYING = False
     SPAWNPROCESS = '/usr/bin/mpg123 -R'    
     QUIT = "q\r"
 
@@ -21,13 +22,13 @@ class RemoteControl():
         self.MonitorProcessThread = Thread(target=self.MonitorProcess)
         self.MonitorProcessThread.start()
 
-    def Play(self):
-        if self.PRESSED_PLAY:
+    def Play(self):        
+        if self.ACTIVELY_PLAYING:            
             self.Pause()
         else:
-            cmd = "LOAD %s\r" % (self.Playlist[self.Current])
-            self.PRESSED_PLAY=True
-            self.RemoteControlProcess.send(cmd) 
+            self.ACTIVELY_PLAYING=True
+            cmd = "LOAD %s\r" % (self.Playlist[self.Current])            
+            self.RemoteControlProcess.send(cmd)         
     
     def InitList(self): 
         self.Playlist = []
@@ -37,7 +38,7 @@ class RemoteControl():
                     self.Playlist.append(os.path.join(dirname, filename))
         shuffle(self.Playlist)
         self.Current=0
-        self.PRESSED_PLAY=False
+        self.ACTIVELY_PLAYING=False
     
     def Stop(self):
         self.RemoteControlProcess.send("S\r") 
@@ -51,7 +52,7 @@ class RemoteControl():
             self.Current -= 1
         else:
             self.Current = len(self.Playlist)-1
-        self.PRESSED_PLAY=False
+        self.ACTIVELY_PLAYING=False
         self.Play()      
     
     def Next(self):
@@ -60,7 +61,7 @@ class RemoteControl():
             self.Current += 1
         else:
             self.Current=0
-        self.PRESSED_PLAY=False
+        self.ACTIVELY_PLAYING=False
         self.Play()        
 
     def MonitorProcess(self):
