@@ -1,29 +1,23 @@
 from remoteControl import RemoteControl
 from pprint import pprint
-from threading import Thread
 from time import sleep
-from buttonTestServer import ButtonTestServer
-import socket
-import asyncore
 from gpio import GPIOHandler
-
-def startButtonServer(rc):
-    buttonServer = ButtonTestServer('localhost', 8080, rc)
-    asyncore.loop(timeout=1)
-    print("done")
+import signal
 
 def doWhenDone():
-    print("paused")
+    print("do when done")
+
+def keyboardInterruptHandler(signal, frame):
+    print("KeyboardInterrupt (ID: {}) has been caught. Cleaning up...".format(signal))
+    exit(0)
 
 def main():
     rc = RemoteControl('/home/pi/mp3s',doWhenDone)
     gp = GPIOHandler(rc)
-    buttonServerThread = Thread(target = startButtonServer, args=(rc,))
-    buttonServerThread.start()
+    signal.signal(signal.SIGINT, keyboardInterruptHandler)
     # Run forever!
-    buttonServerThread.join()    
-    asyncore.close_all()    
-    print("thread finished...exiting")
+    while True:
+        pass
 
 if __name__ == "__main__":
     main()

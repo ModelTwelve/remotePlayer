@@ -75,6 +75,9 @@ class RemoteControl():
                 ])
             if ev == 2:
                 self.callback()
+                self.Next()
+                sleep(1)
+            print("MonitorProcess {}".format(ev))
 
     def Quit(self):
         self.RemoteControlProcess.send(self.QUIT)
