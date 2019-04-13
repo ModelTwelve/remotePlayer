@@ -51,16 +51,16 @@ class GPIOHandler():
         self.rc.Pause()
         if self.shiftStatus == 0:
             # NotShifted
-            os.system("omxplayer /home/pi/sounds/NotShifted.m4a")
+            os.system("omxplayer --vol -1204 /home/pi/sounds/NotShifted.m4a")
         elif self.shiftStatus == 1:
             # MegaShift
-            os.system("omxplayer /home/pi/sounds/MegaShift.m4a")
+            os.system("omxplayer --vol -1204  /home/pi/sounds/MegaShift.m4a")
         elif self.shiftStatus == 2:
             # UltraShift
-            os.system("omxplayer /home/pi/sounds/UltraShift.m4a")
+            os.system("omxplayer --vol -1204  /home/pi/sounds/UltraShift.m4a")
         elif self.shiftStatus == 3:
             # MonsterShift
-            os.system("omxplayer /home/pi/sounds/MonsterShift.m4a")
+            os.system("omxplayer --vol -1204  /home/pi/sounds/MonsterShift.m4a")
         self.rc.Pause()
 
     def NOOP(self):
@@ -106,10 +106,10 @@ class GPIOHandler():
             self.Shift(-1)
         elif channel == self._PREV:
             # Change Genre Down            
-            self.NOOP()
+            self.rc.PrevGenre()
         elif channel == self._NEXT:
             # Change Genre Up
-            self.NOOP()
+            self.rc.NextGenre()
         elif channel == self._STOP:            
             # Set Monster Shift
             self.Shift(1)
