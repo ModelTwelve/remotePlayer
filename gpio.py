@@ -3,6 +3,7 @@ import os
 from pprint import pprint
 from time import sleep
 from threading import Thread
+from WebWeather import WebWeather
 
 class GPIOHandler():
     rc = None
@@ -121,7 +122,14 @@ class GPIOHandler():
             self.Shift(-1)
         elif channel == self._PREV:
             # Web Call 1          
-            pass
+            needUnPause = False
+            if self.rc.ACTIVELY_PLAYING and not self.rc.PAUSED:
+                needUnPause = True
+                self.rc.Pause()
+            w = WebWeather()
+            w.GO()        
+            if needUnPause:
+                self.rc.UnPause()    
         elif channel == self._NEXT:
             # Web Call 2
             pass
