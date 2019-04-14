@@ -8,13 +8,13 @@ from random import shuffle
 class RemoteControl():
 
     Genre = 1
-    Current = 0    
+    Current = [ 0,0,0 ]    
     ACTIVELY_PLAYING = False
+    PAUSED = False
     SPAWNPROCESS = '/usr/bin/mpg123 -R'    
     QUIT = "q\r"
 
-    def __init__(self, MP3Dir, callback):        
-        self.Current=0
+    def __init__(self, MP3Dir, callback):   
         self.MP3Dir = MP3Dir
         self.InitList()
         self.callback = callback
@@ -25,11 +25,15 @@ class RemoteControl():
 
     def Play(self):        
         if self.ACTIVELY_PLAYING:            
-            self.Pause()
+            if self.PAUSED:
+                self.UnPause()
+            else:
+                self.Pause()
         else:
             self.ACTIVELY_PLAYING=True
-            print("Play {},{}".format(self.Genre,self.Current))
-            cmd = "LOAD %s\r" % (self.Playlist[self.Genre][self.Current])            
+            self.PAUSED=False;
+            print("Play {},{}".format(self.Genre,self.Current[self.Genre]))
+            cmd = "LOAD %s\r" % (self.Playlist[self.Genre][self.Current[self.Genre]])            
             self.RemoteControlProcess.send(cmd) 
 
     def InitInnerList(self, rockgenre, listnumber):
@@ -40,6 +44,14 @@ class RemoteControl():
                     self.Playlist[listnumber].append(os.path.join(dirname, filename))        
         shuffle(self.Playlist[listnumber])
 
+    def PlayGenre(self):        
+        if self.Genre == 0:
+            os.system("omxplayer --vol -1204 /home/pi/sounds/Soft.m4a")
+        elif self.Genre == 1:
+            os.system("omxplayer --vol -1204  /home/pi/sounds/Classic.m4a")
+        elif self.Genre == 2:
+            os.system("omxplayer --vol -1204  /home/pi/sounds/Heavy.m4a")
+
     def InitList(self): 
         self.Playlist = [ [], [], [] ]
 
@@ -47,48 +59,58 @@ class RemoteControl():
         self.InitInnerList("classic", 1) 
         self.InitInnerList("heavy", 2)        
         
-        self.Current=0
+        self.Current = [0,0,0]
         self.ACTIVELY_PLAYING=False
+        self.PAUSED=False
     
     def Stop(self):
+        self.ACTIVELY_PLAYING=False
+        self.PAUSED=False
         self.RemoteControlProcess.send("S\r") 
 
     def Pause(self):
-        self.RemoteControlProcess.send("P\r") 
+        if self.ACTIVELY_PLAYING and not self.PAUSED:   
+            self.PAUSED = True
+            self.RemoteControlProcess.send("P\r") 
+    
+    def UnPause(self):
+        if self.ACTIVELY_PLAYING and self.PAUSED:   
+            self.PAUSED = False
+            self.RemoteControlProcess.send("P\r") 
 
     def Prev(self):
-        if self.Current > 0:
-            self.Current -= 1
+        if self.Current[self.Genre] > 0:
+            self.Current[self.Genre] -= 1
         else:
-            self.Current = len(self.Playlist[self.Genre])-1
+            self.Current[self.Genre] = len(self.Playlist[self.Genre])-1
         self.ACTIVELY_PLAYING=False
+        self.PAUSED=False
         self.Play()      
     
     def Next(self):
-        if self.Current < len(self.Playlist[self.Genre])-1:
-            self.Current += 1
+        if self.Current[self.Genre] < len(self.Playlist[self.Genre])-1:
+            self.Current[self.Genre] += 1
         else:
-            self.Current=0
+            self.Current[self.Genre]=0
         self.ACTIVELY_PLAYING=False
+        self.PAUSED=False
         self.Play()        
     
-    def PrevGenre(self):
-        self.Current = 0
+    def PrevGenre(self):        
+        self.Stop()
         if self.Genre > 0:
             self.Genre -= 1
         else:
-            self.Genre = len(self.Playlist)-1
-        self.ACTIVELY_PLAYING=False
-        self.Play()      
+            self.Genre = len(self.Playlist)-1        
+        self.PlayGenre()        
 
-    def NextGenre(self):
-        self.Current = 0
+    def NextGenre(self):        
+        self.Stop()
         if self.Genre < len(self.Playlist)-1:
             self.Genre += 1
         else:
-            self.Genre = 0
-        self.ACTIVELY_PLAYING=False
-        self.Play()        
+            self.Genre = 0        
+        self.PlayGenre()
 
     def MonitorProcess(self):
         ev=999
@@ -100,8 +122,9 @@ class RemoteControl():
                     "@P 0",
                 ])
             if ev == 2:
-                self.callback()
-                self.Next()
+                if self.ACTIVELY_PLAYING:   
+                    self.callback()
+                    self.Next()
             print("MonitorProcess {}".format(ev))
 
     def Quit(self):

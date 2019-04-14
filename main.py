@@ -3,6 +3,7 @@ from pprint import pprint
 from time import sleep
 from gpio import GPIOHandler
 import signal
+from threading import Event
 
 def doWhenDone():
     print("do when done")
@@ -16,8 +17,7 @@ def main():
     gp = GPIOHandler(rc)
     signal.signal(signal.SIGINT, keyboardInterruptHandler)
     # Run forever!
-    while True:
-        pass
+    Event().wait()
 
 if __name__ == "__main__":
     main()

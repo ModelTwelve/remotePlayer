@@ -30,10 +30,10 @@ class GPIOHandler():
         # Stop/Init        
         GPIO.setup(self._STOP, GPIO.IN, pull_up_down=GPIO.PUD_UP)  
 
-        GPIO.add_event_detect(self._PLAY, GPIO.FALLING, callback=self.Button_Logic, bouncetime=500)  
-        GPIO.add_event_detect(self._PREV, GPIO.FALLING, callback=self.Button_Logic, bouncetime=500) 
-        GPIO.add_event_detect(self._NEXT, GPIO.FALLING, callback=self.Button_Logic, bouncetime=500)  
-        GPIO.add_event_detect(self._STOP, GPIO.FALLING, callback=self.Button_Logic, bouncetime=500) 
+        GPIO.add_event_detect(self._PLAY, GPIO.FALLING, callback=self.Button_Logic, bouncetime=100)  
+        GPIO.add_event_detect(self._PREV, GPIO.FALLING, callback=self.Button_Logic, bouncetime=100) 
+        GPIO.add_event_detect(self._NEXT, GPIO.FALLING, callback=self.Button_Logic, bouncetime=100)  
+        GPIO.add_event_detect(self._STOP, GPIO.FALLING, callback=self.Button_Logic, bouncetime=100) 
 
         self.SetVolume(0)
 
@@ -48,7 +48,10 @@ class GPIOHandler():
         os.system("amixer cset numid=1 {0}%".format(self.currentVolume)) 
 
     def PlayShiftStatus(self):
-        self.rc.Pause()
+        needUnPause = False
+        if self.rc.ACTIVELY_PLAYING and not self.rc.PAUSED:
+            needUnPause = True
+            self.rc.Pause()
         if self.shiftStatus == 0:
             # NotShifted
             os.system("omxplayer --vol -1204 /home/pi/sounds/NotShifted.m4a")
@@ -61,10 +64,8 @@ class GPIOHandler():
         elif self.shiftStatus == 3:
             # MonsterShift
             os.system("omxplayer --vol -1204  /home/pi/sounds/MonsterShift.m4a")
-        self.rc.Pause()
-
-    def NOOP(self):
-        a = 1
+        if needUnPause:
+            self.rc.UnPause()
 
     def Shift(self, direction):   
         print("Shift {}".format(direction))
@@ -120,10 +121,10 @@ class GPIOHandler():
             self.Shift(-1)
         elif channel == self._PREV:
             # Web Call 1          
-            self.NOOP()
+            pass
         elif channel == self._NEXT:
             # Web Call 2
-            self.NOOP()
+            pass
         elif channel == self._STOP:            
             # Shutdown
             self.Finish()
