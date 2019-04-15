@@ -1,11 +1,14 @@
 import RPi.GPIO as GPIO  
 import os
+import threading
 from pprint import pprint
 from time import sleep
 from threading import Thread
 from WebWeather import WebWeather
+from WebNews import WebNews
 
 class GPIOHandler():
+    threadLock = threading.Lock()
     rc = None
     currentVolume = 80
     # 0 = Not Shifted
@@ -87,6 +90,7 @@ class GPIOHandler():
         elif channel == self._STOP:            
             # Set Mega Shift
             self.Shift(1)
+        self.threadLock.release()
 
     def MegaShift_Logic(self, channel):   
         if channel == self._PLAY:
@@ -101,6 +105,7 @@ class GPIOHandler():
         elif channel == self._STOP:            
             # Set Ultra Shift
             self.Shift(1)
+        self.threadLock.release()
 
     def UltraShift_Logic(self, channel):   
         if channel == self._PLAY:
@@ -115,6 +120,7 @@ class GPIOHandler():
         elif channel == self._STOP:            
             # Set Monster Shift
             self.Shift(1)
+        self.threadLock.release()
 
     def MonsterShift_Logic(self, channel):   
         if channel == self._PLAY:
@@ -132,16 +138,24 @@ class GPIOHandler():
                 self.rc.UnPause()    
         elif channel == self._NEXT:
             # Web Call 2
-            pass
+            needUnPause = False
+            if self.rc.ACTIVELY_PLAYING and not self.rc.PAUSED:
+                needUnPause = True
+                self.rc.Pause()
+            w = WebNews()
+            w.GO()        
+            if needUnPause:
+                self.rc.UnPause()  
         elif channel == self._STOP:            
             # Shutdown
             self.Finish()
             self.ShutDown()
+        self.threadLock.release()
 
     def Button_Logic(self, channel):  
         # Wait
         sleep(0.033)                 
-        if GPIO.input(channel) == 0:
+        if GPIO.input(channel) == 0 and self.threadLock.acquire() == 1:
             print("Button_Logic Start {}".format(self.shiftStatus))  
             if self.shiftStatus == 0:
                 Thread(target = self.NotShifted_Logic(channel)).start()
