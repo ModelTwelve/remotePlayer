@@ -26,7 +26,7 @@ class WebWeather():
                 y = x["main"]         
                 current_temperature = self.K2F(y["temp"])            
                 weather_description = x["weather"][0]["description"] 
-                cmd = 'flite -voice slt -t "The current temperature is {} fahrenheit and the weather outside is {}"'.format(current_temperature, weather_description)
+                cmd = '/usr/local/bin/flite -voice slt -t "The current temperature is {} fahrenheit and the weather outside is {}"'.format(current_temperature, weather_description)
                 os.system(cmd)
         except:
             pass

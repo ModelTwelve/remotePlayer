@@ -20,8 +20,8 @@ class WebNews():
             response = requests.get(complete_url)         
             x = response.json()         
             if x["status"] == "ok":   
-                art = x["articles"]     
-                cmd = 'flite -voice slt -t "Number of articles {}"'.format(str(len(art)))
+                art = x["articles"][0:5]
+                cmd = '/usr/local/bin/flite -voice slt -t "Number of articles {}"'.format(str(len(art)))
                 os.system(cmd)
                 sleep(0.5) 
                 x = 0
@@ -30,10 +30,10 @@ class WebNews():
                     title = val["title"]
                     #cmd = 'espeak -s 125 -v en+f5 "{}" 2>/dev/null'.format(title)
                     print(title)
-                    cmd = 'flite -voice slt -t "Article number {}"'.format(str(x))
+                    cmd = '/usr/local/bin/flite -voice slt -t "Article number {}"'.format(str(x))
                     os.system(cmd)             
                     sleep(0.5) 
-                    cmd = 'flite -voice slt -t "{}"'.format(title)
+                    cmd = '/usr/local/bin/flite -voice slt -t "{}"'.format(title)
                     os.system(cmd)
                     sleep(0.5) 
         except:

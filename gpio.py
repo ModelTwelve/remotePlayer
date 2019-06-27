@@ -15,7 +15,7 @@ class GPIOHandler():
     # 1 = Mega Shift
     # 2 = Ultra Shift
     # 3 = Monster Shift
-    shiftStatus = 0    
+    currentShiftLevel = 0    
     _PLAY = 17
     _PREV = 27
     _NEXT = 18
@@ -55,10 +55,10 @@ class GPIOHandler():
         if self.rc.ACTIVELY_PLAYING and not self.rc.PAUSED:
             needUnPause = True
             self.rc.Pause()
-        if self.shiftStatus == 0:
+        if self.currentShiftLevel == 0:
             # Level 0
             os.system("omxplayer --vol -1204 /home/pi/sounds/Down.m4a")
-        elif self.shiftStatus == 1:
+        elif self.currentShiftLevel == 1:
             # Level 1
             os.system("omxplayer --vol -1204  /home/pi/sounds/Up.m4a")
         if needUnPause:
@@ -66,11 +66,11 @@ class GPIOHandler():
 
     def Shift(self, direction):   
         print("Shift {}".format(direction))
-        self.shiftStatus += direction
-        if self.shiftStatus < 0:
-            self.shiftStatus = 0            
-        elif self.shiftStatus > 1: 
-            self.shiftStatus = 1
+        self.currentShiftLevel += direction
+        if self.currentShiftLevel < 0:
+            self.currentShiftLevel = 0            
+        elif self.currentShiftLevel > 1: 
+            self.currentShiftLevel = 1
         self.PlayShiftStatus()
 
     def Level0_NotShifted_Logic(self, channel):   
@@ -135,11 +135,11 @@ class GPIOHandler():
         # Wait
         sleep(0.033)                 
         if GPIO.input(channel) == 0 and self.threadLock.acquire() == 1: 
-            print("Button_Logic Start {}".format(self.shiftStatus))  
+            print("Button_Logic Start {}".format(self.currentShiftLevel))  
 
             if GPIO.input(self._SHIFT) == 0:
                 # Shift is pressed
-                if self.shiftStatus == 0:
+                if self.currentShiftLevel == 0:
                     # Level 0
                     Thread(target = self.Level0_Shifted_Logic(channel)).start()  
                 else:
@@ -147,10 +147,10 @@ class GPIOHandler():
                     Thread(target = self.Level1_Shifted_Logic(channel)).start()                    
             else:
                 # Shift is NOT pressed
-                if self.shiftStatus == 0:
+                if self.currentShiftLevel == 0:
                     # Level 0
                     Thread(target = self.Level0_NotShifted_Logic(channel)).start()
                 else:
                     # Level 1
                     Thread(target = self.Level1_NotShifted_Logic(channel)).start()
-            print("Button_Logic Stop {}".format(self.shiftStatus))  
+            print("Button_Logic Stop {}".format(self.currentShiftLevel))  
